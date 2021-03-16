@@ -13,9 +13,8 @@ import sys
 import re
 import numbers
 
-from . import xlplatform, ShapeAlreadyExists
-from .utils import VersionNumber
-from . import utils
+from . import xlplatform, ShapeAlreadyExists, utils
+import xlwings
 
 # Optional imports
 try:
@@ -244,7 +243,7 @@ class App:
 
         .. versionchanged:: 0.9.0
         """
-        return VersionNumber(self.impl.version)
+        return utils.VersionNumber(self.impl.version)
 
     @property
     def selection(self):
@@ -1465,6 +1464,14 @@ class Range:
         self.impl.formula_array = value
 
     @property
+    def font(self):
+        return Font(impl=self.impl.font)
+
+    @property
+    def characters(self):
+        return Characters(impl=self.impl.characters)
+
+    @property
     def column_width(self):
         """
         Gets or sets the width, in characters, of a Range.
@@ -2441,7 +2448,24 @@ class Shape:
 
     @text.setter
     def text(self, value):
-        self.impl.text = value
+        if xlwings.PRO:
+            from xlwings.pro.reports import Markdown
+            from xlwings.pro.reports.markdown import render_text, format_text
+            if isinstance(value, Markdown):
+                self.impl.text = render_text(value.text, value.style)
+                format_text(self, value.text, value.style)
+            else:
+                self.impl.text = value
+        else:
+            self.impl.text = value
+
+    @property
+    def font(self):
+        return Font(impl=self.impl.font)
+
+    @property
+    def characters(self):
+        return Characters(impl=self.impl.characters)
 
     @property
     def parent(self):
@@ -3591,6 +3615,88 @@ class Macro:
         return self.app.impl.run(self.macro, args)
 
     __call__ = run
+
+
+class Characters:
+    def __init__(self, impl):
+        self.impl = impl
+
+    @property
+    def api(self):
+        """
+        Returns the native object (``pywin32`` or ``appscript`` obj) of the engine being used.
+        """
+        return self.impl.api
+
+    @property
+    def text(self):
+        return self.impl.text
+
+    @property
+    def font(self):
+        return Font(self.impl.font)
+
+    def __getitem__(self, item):
+        if isinstance(item, slice) and (item.start and item.stop) and (item.start == item.stop):
+            raise ValueError(self.__class__.__name__ + " object does not support empty slices")
+        if isinstance(item, slice) and item.step is not None:
+            raise ValueError(self.__class__.__name__ + " object does not support slicing with non-default steps")
+        if isinstance(item, slice):
+            return Characters(self.impl[item.start:item.stop])
+        else:
+            return Characters(self.impl[item])
+
+
+class Font:
+    def __init__(self, impl):
+        self.impl = impl
+
+    @property
+    def api(self):
+        """
+        Returns the native object (``pywin32`` or ``appscript`` obj) of the engine being used.
+        """
+        return self.impl.api
+
+    @property
+    def bold(self):
+        return self.impl.bold
+
+    @bold.setter
+    def bold(self, value):
+        self.impl.bold = value
+
+    @property
+    def italic(self):
+        return self.impl.italic
+
+    @italic.setter
+    def italic(self, value):
+        self.impl.italic = value
+
+    @property
+    def size(self):
+        return self.impl.size
+
+    @size.setter
+    def size(self, value):
+        self.impl.size = value
+
+    @property
+    def color(self):
+        return self.impl.color
+
+    @color.setter
+    def color(self, value):
+        self.impl.color = value
+
+    @property
+    def name(self):
+        return self.impl.name
+
+    @name.setter
+    def name(self, value):
+        self.impl.name = value
 
 
 class Books(Collection):
