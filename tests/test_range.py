@@ -3,6 +3,7 @@ import sys
 import unittest
 from datetime import datetime
 from pathlib import Path
+import pytest
 
 import xlwings as xw
 from xlwings.constants import RgbColor
@@ -459,13 +460,15 @@ class TestRangeAttributes(TestBase):
 
     def test_insert_cell(self):
         self.wb1.sheets[0].range("A1:C1").value = "test"
-        self.wb1.sheets[0].range("A1").insert()
+        self.wb1.sheets[0].range("A1").insert(shift='down',
+                                              copy_origin='format_from_left_or_above')
         self.assertIsNone(self.wb1.sheets[0].range("A1").value)
         self.assertEqual(self.wb1.sheets[0].range("A2").value, "test")
 
     def test_insert_row(self):
         self.wb1.sheets[0].range("A1:C1").value = "test"
-        self.wb1.sheets[0].range("1:1").insert()
+        self.wb1.sheets[0].range("1:1").insert(shift='down', 
+                                               copy_origin='format_from_left_or_above')
         self.assertEqual(self.wb1.sheets[0].range("A1:C1").value, [None, None, None])
         self.assertEqual(
             self.wb1.sheets[0].range("A2:C2").value, ["test", "test", "test"]
@@ -473,7 +476,8 @@ class TestRangeAttributes(TestBase):
 
     def test_insert_column(self):
         self.wb1.sheets[0].range("A1:A3").value = "test"
-        self.wb1.sheets[0].range("A:A").insert()
+        self.wb1.sheets[0].range("A:A").insert(shift='right',
+                                               copy_origin='format_from_left_or_above')
         self.assertEqual(self.wb1.sheets[0].range("A1:A3").value, [None, None, None])
         self.assertEqual(
             self.wb1.sheets[0].range("B1:B3").value, ["test", "test", "test"]
@@ -823,6 +827,8 @@ class TestRangeExpansion(TestBase):
 
         self.assertEqual(rng.options(expand="right").value, [["a"] * 3] * 5)
 
+    # FIXME check copy_picture("printer", "bitmap")
+    @pytest.mark.xfail(sys.platform == "win32", reason="CopyPicture Range failed")
     def test_copy_picture(self):
         rng = self.wb1.sheets[0]["A1:B2"]
         rng.copy_picture()

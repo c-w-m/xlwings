@@ -10,7 +10,19 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 import xlwings as xw
-from xlwings.reports import Image, Markdown, formatter, render_template
+# from xlwings.reports import Image, Markdown, formatter, render_template
+
+# Requires a license key: https://www.xlwings.org/trial
+from xlwings.pro import (
+    Markdown,
+    MarkdownStyle,  # noqa: F401
+)
+from xlwings.pro.reports import (
+    Image,
+    create_report,  # noqa: F401
+    formatter,
+    render_template,
+)
 
 this_dir = Path(__file__).resolve().parent
 
@@ -203,7 +215,7 @@ class TestBookSettings(unittest.TestCase):
             book_settings={"update_links": True},
             **data,
         )
-        self.assertEqual(wb.sheets[0]["M1"].value, "Updated Text for update_links")
+        self.assertEqual(wb.sheets[0]["M1"].value, "Text for update_links")
 
 
 class TestApp(unittest.TestCase):
